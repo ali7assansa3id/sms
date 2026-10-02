@@ -1,1 +1,184 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bird SMS مصر</title><style>body{font-family:system-ui,sans-serif;max-width:680px;margin:auto;padding:20px;background:#f5f6f8}main{background:white;padding:20px;border-radius:16px}label{display:block;margin:14px 0 6px;font-weight:700}input,textarea,select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #ccc;border-radius:10px;font-size:16px}textarea{min-height:130px}button{width:100%;padding:13px;margin-top:16px;border:0;border-radius:10px;background:#111;color:white;font-size:17px}pre{white-space:pre-wrap;background:#f1f1f1;padding:12px;border-radius:10px}</style></head><body><main><h1>إرسال SMS إلى مصر</h1><label>رابط Backend Worker</label><input id="backend" placeholder="https://اسمك.workers.dev"><label>رقم المستلم</label><input id="to" inputmode="tel" placeholder="+2010XXXXXXXX"><label>Sender ID</label><input id="from" value="ALI" maxlength="11"><label>نوع الرسالة</label><select id="category"><option value="transactional">Transactional</option><option value="authentication">Authentication</option><option value="service">Service</option><option value="marketing">Marketing</option></select><label>الرسالة</label><textarea id="text" maxlength="1600"></textarea><button id="send">إرسال</button><pre id="out">جاهز.</pre></main><script>const $=x=>document.getElementById(x);$("send").onclick=async()=>{const base=$("backend").value.trim().replace(/\/+$/,'');if(!base)return $("out").textContent='ضع رابط Backend أولاً';$("out").textContent='جارٍ الإرسال...';try{const r=await fetch(base+'/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:$("to").value,from:$("from").value,text:$("text").value,category:$("category").value})});$("out").textContent=JSON.stringify(await r.json(),null,2)}catch(e){$("out").textContent='تعذر الاتصال بالـ Backend: '+e.message}};</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>إرسال SMS إلى مصر</title>
+
+<style>
+body{
+  font-family:system-ui,sans-serif;
+  max-width:680px;
+  margin:auto;
+  padding:20px;
+  background:#f5f6f8
+}
+main{
+  background:white;
+  padding:20px;
+  border-radius:16px
+}
+label{
+  display:block;
+  margin:14px 0 6px;
+  font-weight:700
+}
+input,textarea,select{
+  width:100%;
+  box-sizing:border-box;
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:10px;
+  font-size:16px
+}
+textarea{
+  min-height:130px
+}
+button{
+  width:100%;
+  padding:13px;
+  margin-top:16px;
+  border:0;
+  border-radius:10px;
+  background:#111;
+  color:white;
+  font-size:17px
+}
+pre{
+  white-space:pre-wrap;
+  background:#f1f1f1;
+  padding:12px;
+  border-radius:10px
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<h1>إرسال SMS إلى مصر</h1>
+
+<label>رقم المستلم</label>
+<input id="to" inputmode="tel" placeholder="010XXXXXXXX">
+
+<label>Sender ID</label>
+<input id="from" value="ALI" maxlength="11">
+
+<label>نوع الرسالة</label>
+<select id="category">
+  <option value="transactional">Transactional</option>
+  <option value="authentication">Authentication</option>
+  <option value="service">Service</option>
+  <option value="marketing">Marketing</option>
+</select>
+
+<label>الرسالة</label>
+<textarea id="text" maxlength="1600"></textarea>
+
+<button id="send">إرسال</button>
+
+<pre id="out">جاهز.</pre>
+
+</main>
+
+<script>
+
+const $ = x => document.getElementById(x);
+
+/*
+  Vercel Backend
+*/
+const BACKEND =
+  "https://sms-onxnambox-ateam-1183.vercel.app/api/send";
+
+
+function normalizeEgyptianNumber(value){
+
+  let number = value.trim();
+
+  // إزالة المسافات والشرطات
+  number = number.replace(/[\s-]/g, "");
+
+  // 01012345678 -> +201012345678
+  if(/^01\d{9}$/.test(number)){
+    return "+20" + number.substring(1);
+  }
+
+  // 201012345678 -> +201012345678
+  if(/^20\d{10}$/.test(number)){
+    return "+" + number;
+  }
+
+  // +201012345678
+  if(/^\+20\d{10}$/.test(number)){
+    return number;
+  }
+
+  return null;
+}
+
+
+$("send").onclick = async () => {
+
+  const out = $("out");
+
+  const to = normalizeEgyptianNumber($("to").value);
+  const from = $("from").value.trim();
+  const text = $("text").value.trim();
+  const category = $("category").value;
+
+  if(!to){
+    out.textContent =
+      "رقم الهاتف غير صحيح.\nمثال: 01012345678";
+    return;
+  }
+
+  if(!from){
+    out.textContent = "أدخل Sender ID.";
+    return;
+  }
+
+  if(!text){
+    out.textContent = "اكتب نص الرسالة.";
+    return;
+  }
+
+  out.textContent = "جارٍ الإرسال...";
+
+  try{
+
+    const response = await fetch(BACKEND, {
+      method: "POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        to:to,
+        from:from,
+        text:text,
+        category:category
+      })
+    });
+
+    const result = await response.json();
+
+    out.textContent =
+      JSON.stringify(result,null,2);
+
+  }catch(error){
+
+    out.textContent =
+      "تعذر الاتصال بخادم الإرسال:\n" +
+      error.message;
+
+  }
+
+};
+
+</script>
+
+</body>
+</html>
